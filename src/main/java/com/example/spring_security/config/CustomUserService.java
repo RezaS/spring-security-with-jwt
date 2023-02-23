@@ -1,6 +1,6 @@
 package com.example.spring_security.config;
 
-import com.example.spring_security.entity.User;
+import com.example.spring_security.auth.User;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

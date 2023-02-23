@@ -1,4 +1,4 @@
-package com.example.spring_security.entity;
+package com.example.spring_security.auth;
 
 import jakarta.persistence.*;
 import lombok.*;

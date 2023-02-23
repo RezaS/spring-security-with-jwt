@@ -1,4 +1,4 @@
-package com.example.spring_security.controller;
+package com.example.spring_security.auth;
 
 import com.example.spring_security.config.CustomUserDetails;
 import com.example.spring_security.config.Jwt;
@@ -14,7 +14,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
@@ -24,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/")
-public class HelloController {
+public class AuthController {
     @Autowired
     private Jwt jwt;
     @Autowired
@@ -53,22 +52,8 @@ public class HelloController {
      * @return A string
      */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody com.example.spring_security.entity.User userDto) {
-        UserDetails userDetails;
-        try {
-            userDetails = userDetailsService.loadUserByUsername(userDto.getUsername());
-        }
-        catch (UsernameNotFoundException e) {
-            userDetails = null;
-        }
+    public ResponseEntity<String> register(@RequestBody User userDto) {
 
-        if (userDetails != null && userDetails.getUsername().equals(userDto.getUsername())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username already exists");
-        }
-
-        if (userDto.getUsername() == null || userDto.getUsername().isEmpty()) {
-            throw new IllegalArgumentException("Username may not be empty or null");
-        }
 
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
