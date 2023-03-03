@@ -2,13 +2,13 @@ package com.example.spring_security.auth;
 
 import com.example.spring_security.config.CustomUserDetails;
 import com.example.spring_security.config.Jwt;
+import com.example.spring_security.exception.CustomAuthenticationException;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,9 +52,7 @@ public class AuthController {
      * @return A string
      */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User userDto) {
-
-
+    public ResponseEntity<String> register(@Valid @RequestBody User userDto) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
@@ -74,22 +72,20 @@ public class AuthController {
      * @param user A JSON that takes the keys "username" and "password"
      * @return A token
      */
+
     @PostMapping("/login")
-    public ResponseEntity<Object> login(@RequestBody CustomUserDetails user) {
-        try {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-            if (userDetails == null || !passwordEncoder.matches(user.getPassword(), userDetails.getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed");
-            }
+    public ResponseEntity<Object> login(@Valid @RequestBody CustomUserDetails user) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
 
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String token = jwt.generateToken(user);
+        if (userDetails == null || !passwordEncoder.matches(user.getPassword(), userDetails.getPassword())) {
+            throw new CustomAuthenticationException("Password is not correct");
+        }
 
-            return ResponseEntity.ok(token);
-        }
-        catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed");
-        }
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwt.generateToken(user);
+
+        return ResponseEntity.ok(token);
     }
+
 }

@@ -17,13 +17,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
-
 import javax.sql.DataSource;
 
 @Configuration
 @AllArgsConstructor
 @ComponentScan(basePackages = "com.example.spring_security.config")
-@EnableJpaRepositories(basePackages = "repository")
+@EnableJpaRepositories(basePackages = "com.example.spring_security.auth")
 public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final DataSource dataSource;
