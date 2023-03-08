@@ -1,11 +1,15 @@
 package com.example.spring_security.config;
 
+import com.example.spring_security.exception.Response;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +18,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Collections;
 
 @AllArgsConstructor
 @Component
@@ -27,15 +33,24 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
 
+
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
+            // Check if token is valid
             try {
-                username = jwt.extractUsername(token);
+                jwt.isTokenValid(token, customUserService.loadUserByUsername(jwt.extractUsername(token)));
             }
             catch (Exception e) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                Response responseObj = new Response("UNAUTHORIZED", HttpStatus.UNAUTHORIZED, LocalDateTime.now(), Collections.singletonList("Invalid token"));
+                ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+                String json = mapper.writeValueAsString(responseObj);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write(json);
                 return;
             }
+            username = jwt.extractUsername(token);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

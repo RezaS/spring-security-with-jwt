@@ -3,8 +3,11 @@ package com.example.spring_security.auth;
 import com.example.spring_security.config.CustomUserDetails;
 import com.example.spring_security.config.Jwt;
 import com.example.spring_security.exception.CustomAuthenticationException;
+import com.example.spring_security.exception.Response;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,23 +21,22 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/api")
+@RequiredArgsConstructor
 public class AuthController {
-    @Autowired
-    private Jwt jwt;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-    @Autowired
-    private UserDetailsManager userDetailsManager;
+    private final Jwt jwt;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
+    private final UserDetailsManager userDetailsManager;
 
     @GetMapping("/welcome")
     public String welcome() {
@@ -52,7 +54,7 @@ public class AuthController {
      * @return A string
      */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody User userDto) {
+    public ResponseEntity<?> register(@Valid @RequestBody User userDto) {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
@@ -63,8 +65,15 @@ public class AuthController {
                 authorities,
                 false
         );
-        userDetailsManager.createUser(user);
-        return ResponseEntity.ok("User registered successfully!");
+        try {
+            userDetailsManager.createUser(user);
+            Response response = new Response("USER_CREATED_SUCCESSFULLY", HttpStatus.CREATED, LocalDateTime.now(), List.of("User registered successfully"));
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
+        catch (DuplicateKeyException e) {
+            Response response = new Response("USER_ALREADY_EXISTS", HttpStatus.CONFLICT, LocalDateTime.now(), List.of("User already exists"));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
     }
 
     /**
@@ -83,7 +92,9 @@ public class AuthController {
 
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = jwt.generateToken(user);
+
+        Map<String, String> token = new HashMap<>();
+        token.put("token", jwt.generateToken(user));
 
         return ResponseEntity.ok(token);
     }

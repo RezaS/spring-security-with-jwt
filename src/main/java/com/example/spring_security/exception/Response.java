@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class ErrorResponse {
+public class Response {
     private String code;
     private HttpStatus status;
     @JsonFormat(pattern = "dd.MM.YYYY, HH:mm:ss")
