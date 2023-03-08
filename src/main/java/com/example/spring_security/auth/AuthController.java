@@ -6,7 +6,6 @@ import com.example.spring_security.exception.CustomAuthenticationException;
 import com.example.spring_security.exception.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,6 +36,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
     private final UserDetailsManager userDetailsManager;
+    private final UserRepository userRepository;
 
     @GetMapping("/welcome")
     public String welcome() {
@@ -65,12 +65,14 @@ public class AuthController {
                 authorities,
                 false
         );
-        try {
+
+        // Check if user exists
+        if (!userRepository.existsByUsername(userDto.getUsername())) {
             userDetailsManager.createUser(user);
             Response response = new Response("USER_CREATED_SUCCESSFULLY", HttpStatus.CREATED, LocalDateTime.now(), List.of("User registered successfully"));
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
-        catch (DuplicateKeyException e) {
+        else {
             Response response = new Response("USER_ALREADY_EXISTS", HttpStatus.CONFLICT, LocalDateTime.now(), List.of("User already exists"));
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
