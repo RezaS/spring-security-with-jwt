@@ -17,8 +17,6 @@ import lombok.Setter;
 @Table(name = "users")
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     @NotBlank(message = "Username is mandatory")
     @Email(message = "Username should be a valid email address")
     private String username;
