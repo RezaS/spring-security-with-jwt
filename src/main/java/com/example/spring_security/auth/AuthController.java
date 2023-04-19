@@ -1,42 +1,22 @@
 package com.example.spring_security.auth;
 
 import com.example.spring_security.config.CustomUserDetails;
-import com.example.spring_security.config.Jwt;
-import com.example.spring_security.exception.CustomAuthenticationException;
 import com.example.spring_security.exception.Response;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class AuthController {
-    private final Jwt jwt;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
-    private final UserDetailsManager userDetailsManager;
-    private final UserRepository userRepository;
+    private final AuthService authService;
 
     @GetMapping("/welcome")
     public String welcome() {
@@ -54,28 +34,23 @@ public class AuthController {
      * @return A string
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody User userDto) {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-
-        UserDetails user = new CustomUserDetails(
-                userDto.getUsername(),
-                new BCryptPasswordEncoder().encode(userDto.getPassword()),
-                authorities,
-                false
-        );
-
-        // Check if user exists
-        if (!userRepository.existsByUsername(userDto.getUsername())) {
-            userDetailsManager.createUser(user);
-            Response response = new Response("USER_CREATED_SUCCESSFULLY", HttpStatus.CREATED, LocalDateTime.now(), List.of("User registered successfully"));
+    public ResponseEntity<?> register(@Valid @RequestBody User userDto) throws MessagingException {
+        if (authService.registeredSuccessfully(userDto)) {
+            Response response = Response.builder()
+                    .code("USER_CREATED_SUCCESSFULLY")
+                    .status(HttpStatus.CREATED)
+                    .timestamp(LocalDateTime.now())
+                    .messages(List.of("User registered successfully"))
+                    .build();
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
-        else {
-            Response response = new Response("USER_ALREADY_EXISTS", HttpStatus.CONFLICT, LocalDateTime.now(), List.of("User already exists"));
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        }
+        Response response = Response.builder()
+                .code("USER_ALREADY_EXISTS")
+                .status(HttpStatus.CONFLICT)
+                .timestamp(LocalDateTime.now())
+                .messages(List.of("User already exists"))
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     /**
@@ -83,22 +58,52 @@ public class AuthController {
      * @param user A JSON that takes the keys "username" and "password"
      * @return A token
      */
-
     @PostMapping("/login")
     public ResponseEntity<Object> login(@Valid @RequestBody CustomUserDetails user) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-
-        if (userDetails == null || !passwordEncoder.matches(user.getPassword(), userDetails.getPassword())) {
-            throw new CustomAuthenticationException("Password is not correct");
+        String token = authService.login(user);
+        if (token == null) {
+            Response response = Response.builder()
+                    .code("LOGIN_FAILED")
+                    .status(HttpStatus.BAD_REQUEST)
+                    .timestamp(LocalDateTime.now())
+                    .messages(List.of("User could not be logged in. Possibly reason could be that the account is inactive."))
+                    .build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+        Response response = Response.builder()
+                .code("LOGIN_SUCCESS")
+                .status(HttpStatus.OK)
+                .timestamp(LocalDateTime.now())
+                .messages(List.of("User has logged in successfully."))
+                .token(token)
+                .build();
+        return ResponseEntity.ok(response);
+    }
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        Map<String, String> token = new HashMap<>();
-        token.put("token", jwt.generateToken(user));
-
-        return ResponseEntity.ok(token);
+    /**
+     * Verifies user's account from a link that was sent by email
+     * @param token a token in a GET parameter
+     * @return Returns a token
+     */
+    @GetMapping("/verify-account")
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+        if (authService.accountIsVerified(token)) {
+            Response response = Response.builder()
+                    .code("USER_VERIFIED_SUCCESSFULLY")
+                    .status(HttpStatus.OK)
+                    .timestamp(LocalDateTime.now())
+                    .messages(List.of("Account has been verified successfully."))
+                    .token(token)
+                    .build();
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+        Response response = Response.builder()
+                .code("USER_VERIFICATION_FAILED")
+                .status(HttpStatus.BAD_REQUEST)
+                .timestamp(LocalDateTime.now())
+                .messages(List.of("Token could not be validated, so account could not verified."))
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
 }

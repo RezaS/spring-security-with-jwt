@@ -25,7 +25,12 @@ public class ValidationExceptionHandler {
         List<String> errors = new ArrayList<>();
         ex.getBindingResult().getFieldErrors().forEach(error -> errors.add(error.getDefaultMessage()));
 
-        Response response = new Response("VALIDATION", HttpStatus.BAD_REQUEST, LocalDateTime.now(), errors);
+        Response response = Response.builder()
+                .code("VALIDATION")
+                .status(HttpStatus.BAD_REQUEST)
+                .timestamp(LocalDateTime.now())
+                .messages(errors)
+                .build();
         return ResponseEntity.badRequest().body(response);
     }
 }

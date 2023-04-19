@@ -41,7 +41,12 @@ public class JwtFilter extends OncePerRequestFilter {
                 jwt.isTokenValid(token, customUserService.loadUserByUsername(jwt.extractUsername(token)));
             }
             catch (Exception e) {
-                Response responseObj = new Response("UNAUTHORIZED", HttpStatus.UNAUTHORIZED, LocalDateTime.now(), Collections.singletonList("Invalid token"));
+                Response responseObj = Response.builder()
+                        .code("UNAUTHORIZED")
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .timestamp(LocalDateTime.now())
+                        .messages(Collections.singletonList("Invalid token"))
+                        .build();
                 ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 String json = mapper.writeValueAsString(responseObj);
                 response.setContentType("application/json");

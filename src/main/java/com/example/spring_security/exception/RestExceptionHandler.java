@@ -19,7 +19,12 @@ public class RestExceptionHandler {
         };
         List<String> errorList = new ArrayList<>();
         errorList.add(exception.getMessage());
-        Response response = new Response("INVALID_SQL", status, LocalDateTime.now(), errorList);
+        Response response = Response.builder()
+                .code("INVALID_SQL")
+                .status(status)
+                .timestamp(LocalDateTime.now())
+                .messages(errorList)
+                .build();
         return ResponseEntity.badRequest().body(response);
     }
 }

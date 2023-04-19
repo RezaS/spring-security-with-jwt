@@ -1,6 +1,5 @@
 package com.example.spring_security.config;
 
-
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -18,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
-
 import javax.sql.DataSource;
 
 @Configuration

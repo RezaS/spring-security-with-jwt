@@ -15,7 +15,8 @@ import java.util.function.Function;
 
 @Service
 public class Jwt {
-    public static final String SECRET_KEY = "743777217A25432A462D4A614E645267556B58703272357538782F413F442847"; // From https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx (enable HEX!)
+    // Todo: Please change the value of SECRET_KEY immediately!
+    public static final String SECRET_KEY = "743777217A25432A462D4A614E645267556B58703272357538782F413F442847"; // Can be generated on https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx (enable HEX!)
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }

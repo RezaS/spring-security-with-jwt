@@ -17,14 +17,24 @@ public class AuthControllerAdvice extends ResponseEntityExceptionHandler {
     // Username exception
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Object> handleBadCredentialsException() {
-        Response response = new Response(ERROR_CODE, HttpStatus.BAD_REQUEST, LocalDateTime.now(), List.of("Username not found"));
+        Response response = Response.builder()
+                .code(ERROR_CODE)
+                .status(HttpStatus.BAD_REQUEST)
+                .timestamp(LocalDateTime.now())
+                .messages(List.of("Username not found"))
+                .build();
         return ResponseEntity.badRequest().body(response);
     }
 
     // Password exception
     @ExceptionHandler(CustomAuthenticationException.class)
     public ResponseEntity<Object> handleBadCredentialsException(Exception exception) {
-        Response response = new Response(ERROR_CODE, HttpStatus.BAD_REQUEST, LocalDateTime.now(), List.of(exception.getMessage()));
+        Response response = Response.builder()
+                .code(ERROR_CODE)
+                .status(HttpStatus.BAD_REQUEST)
+                .timestamp(LocalDateTime.now())
+                .messages(List.of(exception.getMessage()))
+                .build();
         return ResponseEntity.badRequest().body(response);
     }
 }
